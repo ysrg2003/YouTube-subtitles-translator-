@@ -26,6 +26,18 @@ A professional and advanced tool designed for extracting and translating YouTube
 2. إذا قمت بإدخال **رابط فيديو مفرد**: سيتم حفظ ملف الترجمة النهائي داخل المجلد يحمل اسم الفيديو الأصلي بصيغة `.srt` (الصيغة القياسية للترجمات).
 3. إذا قمت بإدخال **رابط قائمة تشغيل (Playlist)**: سيقوم بإنشاء مجلد فرعي داخل `output` يحمل اسم قائمة التشغيل، وداخله ستجد جميع ملفات الترجمة `.srt` للفيديوهات مُرتبة ومنظمة لتسهيل استخدامها.
 
+### خريطة توضيحية لشكل المخرجات:
+
+```mermaid
+graph TD
+    A[output folder] -->|Single Video| B[video_title.srt]
+    A -->|Playlist| C[playlist_name folder]
+    C --> D[video1_title.srt]
+    C --> E[video2_title.srt]
+    C --> F[...]
+    C --> G[videoN_title.srt]
+```
+
 ## المتطلبات (Prerequisites)
 
 يعتمد هذا المشروع على لغة بايثون (Python 3.x). يجب تثبيت المكتبات التالية قبل تشغيل السكربت:
