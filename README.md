@@ -28,14 +28,14 @@ A professional and advanced tool designed for extracting and translating YouTube
 
 ### خريطة توضيحية لشكل المخرجات:
 
-```mermaid
-graph TD
-    A[output folder] -->|Single Video| B[video_title.srt]
-    A -->|Playlist| C[playlist_name folder]
-    C --> D[video1_title.srt]
-    C --> E[video2_title.srt]
-    C --> F[...]
-    C --> G[videoN_title.srt]
+```
+output/
+├── video_title.srt  # ملف ترجمة لفيديو مفرد
+└── playlist_name/   # مجلد لقائمة تشغيل
+    ├── video1_title.srt
+    ├── video2_title.srt
+    ├── ...
+    └── videoN_title.srt
 ```
 
 ## المتطلبات (Prerequisites)
