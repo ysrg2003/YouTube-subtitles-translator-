@@ -1,65 +1,164 @@
-# V2 YouTube Subtitles Translator Pro
+# YouTube Subtitles Translator Pro (Python)
 
-أداة متقدمة واحترافية صُممت خصيصاً لاستخراج وترجمة ترجمات مقاطع فيديو وقوائم تشغيل يوتيوب تلقائياً، مصممة بأداء عالٍ وتتضمن تقنيات ذكية للتعامل مع حظر خوادم الترجمة وتفادي التوقف المزعج أثناء العمليات الطويلة.
+أداة بايثون لاستخراج ترجمات YouTube وتحويلها إلى ملفات `.srt` مترجمة تلقائيًا (العربية افتراضيًا)، مع دعم الفيديو المفرد وقوائم التشغيل.  
+Python tool to fetch YouTube transcripts and generate translated `.srt` files (Arabic by default), supporting both single videos and playlists.
 
-A professional and advanced tool designed for extracting and translating YouTube video and playlist subtitles automatically, featuring high performance with intelligent load-balancing to handle translation server limits.
+> Repository: `ysrg2003/YouTube-subtitles-translator-`  
+> Default branch: `main`  
+> Primary language: Python
 
-## الفوائد للمستخدم العادي (Why use this?)
+---
 
-تُقدم هذه الأداة فوائد ملموسة للمتعلمين والمستخدمين العاديين، منها:
-- **ترجمة الدورات والمحتوى التعليمي**: يمكنك إعطاء الأداة رابطاً لقائمة تشغيل (كورس كامل) وسوف تقوم باستخراج جميع الملفات النصية وترجمتها مرة واحدة لتستطيع دراستها براحة.
-- **مشاهدة أوفلاين**: يمكنك تحميل الترجمة وتشغيلها مع الفيديوهات المحملة محلياً على جهازك باستخدام مشغلات مثل VLC دون الحاجة للإنترنت.
-- **تجاوز قيود يوتيوب**: يوفر السكربت إمكانية سحب الترجمات الأصلية بصيغة نظيفة ومترجمة بطريقة مستقرة، حتى في الفيديوهات الطويلة التي تتسبب بانهيار أدوات المتصفح التقليدية.
+## نظرة عامة | Project Overview
 
-## الميزات الأساسية (Key Features)
+**العربية:**  
+هذا المشروع مناسب للمتعلمين، صناع المحتوى، والمستخدمين الذين يريدون ترجمة ترجمات فيديوهات YouTube بسرعة وبشكل منظم، خصوصًا عند التعامل مع فيديوهات طويلة أو قوائم تشغيل كاملة.
 
-- **استخراج الترجمات مباشرة**: سحب النصوص الأصلية للفيديوهات من يوتيوب بسهولة تامة وبأدق توقيت للزمن (Timestamps).
-- **ترجمة سريعة ودقيقة**: الترجمة إلى اللغة العربية (وغيرها) مدعومة بواسطة محرك `Google Translator` (عبر مكتبة `deep-translator`).
-- **دعم شامل لقوائم التشغيل (Playlists)**: لا حاجة لإدخال الفيديوهات واحداً تلو الآخر؛ فقط ضع رابط القائمة وسيقوم السكربت بقراءتها كلها، والتعامل مع الفيديوهات بفاصل زمني (Delay) آمن ومدروس لتجنب الحظر من الخوادم.
-- **نظام التوازن الديناميكي الأوتوماتيكي (Dynamic Load Balancing)**: يقوم السكربت بمراقبة نجاح أو فشل عمليات الترجمة. في حال وجود مشاكل أو ضغط، يقوم بتقليل حجم النصوص المدمجة (Chunk Size) وتقليص عدد العمليات المتزامنة (Workers) تلقائياً لتجنب الحظر، ثم يعيد زيادتها تدريجياً عند استقرار الاتصال.
-- **ترجمة متزامنة ومتعددة المسارات (Multithreading)**: تسريع عملية الترجمة بشكل كبير بدلاً من الترجمة سطرًا بسطر.
+**English:**  
+This project is useful for learners, content creators, and anyone who wants fast, structured subtitle translation from YouTube—especially for long videos or full playlists.
 
-## شكل المخرجات (Output Format)
+### متى تستخدمه؟ | When to use it
+- عندما تريد ملف ترجمة مترجم أوفلاين بصيغة `.srt`.
+- عندما تحتاج معالجة قائمة تشغيل كاملة بدلًا من فيديو واحد.
+- عندما تريد التحكم في لغة الهدف، عدد العمال (`workers`)، وحجم الدفعة (`chunk-size`).
 
-السكربت منظم جداً في طريقة حفظ الملفات:
-1. سيقوم بإنشاء مجلد رئيسي باسم `output` بجانب السكربت.
-2. إذا قمت بإدخال **رابط فيديو مفرد**: سيتم حفظ ملف الترجمة النهائي داخل المجلد يحمل اسم الفيديو الأصلي بصيغة `.srt` (الصيغة القياسية للترجمات).
-3. إذا قمت بإدخال **رابط قائمة تشغيل (Playlist)**: سيقوم بإنشاء مجلد فرعي داخل `output` يحمل اسم قائمة التشغيل، وداخله ستجد جميع ملفات الترجمة `.srt` للفيديوهات مُرتبة ومنظمة لتسهيل استخدامها.
+---
 
-### خريطة توضيحية لشكل المخرجات:
+## الميزات | Features
 
-```
-output/
-├── video_title.srt  # ملف ترجمة لفيديو مفرد
-└── playlist_name/   # مجلد لقائمة تشغيل
-    ├── video1_title.srt
-    ├── video2_title.srt
-    ├── ...
-    └── videoN_title.srt
-```
+- استخراج الترجمة الأصلية من YouTube مع التوقيتات (timestamps).
+- ترجمة تلقائية عبر `deep-translator` (GoogleTranslator).
+- دعم إدخال:
+  - رابط فيديو YouTube
+  - Video ID فقط (11 characters)
+  - رابط Playlist
+- معالجة متوازية مع تكيّف تلقائي لتقليل الأخطاء عند ضغط الترجمة.
+- حفظ النسخة الأصلية + النسخة المترجمة في بنية ملفات واضحة.
+- تخطي الفيديوهات المترجمة سابقًا تلقائيًا (إلا عند استخدام `--force`).
+- وضع تفاعلي، ووضع سطر أوامر مناسب للأتمتة.
 
-## المتطلبات (Prerequisites)
+---
 
-يعتمد هذا المشروع على لغة بايثون (Python 3.x). يجب تثبيت المكتبات التالية قبل تشغيل السكربت:
+## المتطلبات | Prerequisites
+
+- Python 3.9+ (يُفضّل)
+- اتصال إنترنت
+- الحزم التالية:
 
 ```bash
 pip install youtube-transcript-api deep-translator yt-dlp requests
 ```
 
-## طريقة الاستخدام (Usage)
+> ملاحظة: في وضع اختيار ملفات `.srt` محليًا (واجهة الملفات)، قد تحتاج بيئة تدعم `tkinter` حسب نظامك.
 
-قم بتشغيل السكربت عبر بيئة الأوامر (Terminal) في مسار تواجد الملف:
+---
+
+## التثبيت والإعداد | Installation & Setup
+
+1. ادخل إلى مجلد المشروع:
 
 ```bash
-python "V2 YouTube subtitles translator pro.py"
+cd /path/to/YouTube-subtitles-translator-
 ```
 
-بمجرد عمل السكربت، سيطلب منك إدخال الرابط. يمكنك لصق التالي:
-- رابط فيديو عادي (مثال: `https://www.youtube.com/watch?v=...`)
-- معرف فيديو فقط (Video ID)
-- رابط قائمة تشغيل كاملة (مثال: `https://www.youtube.com/playlist?list=...`)
+2. (اختياري لكن مُوصى به) أنشئ بيئة افتراضية:
 
-## ملاحظات هامة
+```bash
+python -m venv .venv
+source .venv/bin/activate  # Linux/macOS
+```
 
-- تم ضبط الإعدادات الافتراضية للترجمة لتكون قوية بـ 10 مسارات معالجة متزامنة (Workers)، مع إمكانية النظام خفض الموارد تدريجياً إذا استُشعر أي رفض للاتصال من قِبل جوجل للترجمة.
-- يفضل أن يكون لديك اتصال إنترنت جيد للتعامل مع الترجمة الموازية الكثيفة للفيديوهات الطويلة.
+3. ثبّت الاعتمادات:
+
+```bash
+pip install youtube-transcript-api deep-translator yt-dlp requests
+```
+
+---
+
+## التشغيل | Usage
+
+اسم السكربت الحالي داخل المستودع:
+
+```bash
+python V100_YouTube_subtitles_translator_pro.py
+```
+
+### 1) الوضع التفاعلي | Interactive mode
+
+شغّل السكربت بدون معاملات ثم اختر:
+- `1` لإدخال رابط فيديو/Playlist
+- `2` لترجمة ملفات `.srt` محلية
+
+### 2) وضع سطر الأوامر | CLI mode
+
+```bash
+python V100_YouTube_subtitles_translator_pro.py "<video_or_playlist_url_or_video_id>" \
+  --target ar \
+  --workers 6 \
+  --chunk-size 40 \
+  --output-dir output
+```
+
+#### الخيارات | Options
+- `--target`: كود لغة الهدف (افتراضي: `ar`)
+- `--workers`: عدد عمليات الترجمة المتوازية
+- `--chunk-size`: حجم دفعة المقاطع المترجمة
+- `--output-dir`: مجلد المخرجات الأساسي
+- `--force`: إعادة المعالجة حتى إذا كانت الترجمة موجودة
+
+---
+
+## المدخلات المتوقعة | Supported Inputs
+
+يمكن إدخال أي من التالي:
+
+1. **YouTube video URL**  
+   مثال: `https://www.youtube.com/watch?v=dQw4w9WgXcQ`
+
+2. **YouTube video ID** (11 chars)  
+   مثال: `dQw4w9WgXcQ`
+
+3. **YouTube playlist URL**  
+   مثال: `https://www.youtube.com/playlist?list=PLxxxxxx`
+
+---
+
+## شكل المخرجات | Output Structure
+
+افتراضيًا تُحفظ النتائج داخل `output/` (أو المسار المحدد عبر `--output-dir`).
+
+```text
+output/
+├── single_video/
+│   └── <video_title_or_id>_<video_id>/
+│       ├── <source_lang>.srt
+│       └── arabic.srt أو <target_lang>.srt
+├── playlist_<playlist_title>/
+│   └── <video_title_or_id>_<video_id>/
+│       ├── <source_lang>.srt
+│       └── arabic.srt أو <target_lang>.srt
+└── local_subtitles/
+    └── <subtitle_file_name>/
+        └── arabic.srt أو <target_lang>.srt
+```
+
+---
+
+## ملاحظات مهمة وسلوك التشغيل | Runtime Notes & Limitations
+
+- يعتمد المشروع على توفر Transcript للفيديو في YouTube؛ بعض الفيديوهات قد تفشل (مثل تعطيل الترجمة أو عدم وجودها).
+- جودة الترجمة تعتمد على خدمة الترجمة الآلية وقد تحتاج مراجعة بشرية.
+- توجد مهلة قصيرة بين فيديوهات Playlist لتقليل الضغط على الخدمات.
+- السكربت يحاول التكيّف تلقائيًا (تقليل/زيادة `workers` و`chunk-size`) عند نجاح/فشل الطلبات.
+- إذا كانت الترجمة موجودة مسبقًا، يتم التخطي تلقائيًا ما لم تستخدم `--force`.
+
+---
+
+## مثال سريع | Quick Example
+
+```bash
+python V100_YouTube_subtitles_translator_pro.py "https://www.youtube.com/watch?v=dQw4w9WgXcQ" --target ar
+```
+
+الناتج: مجلد داخل `output/single_video/` يحتوي النسخة الأصلية ونسخة مترجمة بصيغة `.srt`.
