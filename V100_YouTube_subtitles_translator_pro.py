@@ -14,6 +14,8 @@ YouTube Transcript -> Translated SRT Converter (v3)
         [--target ar] [--workers 6] [--chunk-size 60] [--output-dir output] [--force]
 """
 import argparse
+import inspect
+import os
 import random
 import re
 import sys
@@ -41,6 +43,11 @@ except Exception:
     print("[ERROR] Missing dependency: youtube-transcript-api")
     print("Run: pip install youtube-transcript-api")
     sys.exit(1)
+
+try:
+    from youtube_transcript_api.proxies import GenericProxyConfig
+except Exception:
+    GenericProxyConfig = None
 
 try:
     from deep_translator import GoogleTranslator
@@ -89,12 +96,45 @@ TRANSLATION_BACKOFF_MULTIPLIER = 2.0  # معامل التضاعف الأسي ب�
 PLAYLIST_VIDEO_DELAY = 2.0
 
 _print_lock = threading.Lock()
+_scraperapi_proxy_log_once = False
 
 
 def log(message: str) -> None:
     """طباعة آمنة بين الخيوط (Threads) لمنع تداخل الأسطر."""
     with _print_lock:
         print(message)
+
+
+def _build_scraperapi_proxy_url() -> Optional[str]:
+    key = os.environ.get("SCRAPERAPI_KEY", "").strip()
+    if not key:
+        return None
+    return f"http://scraperapi:{key}@proxy-server.scraperapi.com:8001"
+
+
+def _build_youtube_transcript_api_client():
+    global _scraperapi_proxy_log_once
+
+    proxy_url = _build_scraperapi_proxy_url()
+    if not proxy_url:
+        return YouTubeTranscriptApi()
+
+    if not _scraperapi_proxy_log_once:
+        log("• SCRAPERAPI_KEY detected: enabling proxy for transcript requests.")
+        _scraperapi_proxy_log_once = True
+
+    try:
+        if GenericProxyConfig is not None:
+            init_signature = inspect.signature(YouTubeTranscriptApi)
+            if "proxy_config" in init_signature.parameters:
+                proxy_config = GenericProxyConfig(http_url=proxy_url, https_url=proxy_url)
+                return YouTubeTranscriptApi(proxy_config=proxy_config)
+    except Exception as exc:
+        log(f"  [WARN] Could not initialize youtube-transcript-api proxy config: {exc}")
+
+    os.environ.setdefault("HTTP_PROXY", proxy_url)
+    os.environ.setdefault("HTTPS_PROXY", proxy_url)
+    return YouTubeTranscriptApi()
 
 
 # ---------------------------------------------------------------------------
@@ -343,7 +383,7 @@ def parse_srt_file(path: Path) -> List[Dict]:
 # ---------------------------------------------------------------------------
 def get_transcript_list(video_id: str):
     """يدعم إصدارات youtube-transcript-api الحديثة والقديمة معًا."""
-    ytt_api = YouTubeTranscriptApi()
+    ytt_api = _build_youtube_transcript_api_client()
 
     if hasattr(ytt_api, "list"):
         return ytt_api.list(video_id)
