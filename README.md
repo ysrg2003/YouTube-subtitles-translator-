@@ -101,6 +101,7 @@ python V100_YouTube_subtitles_translator_pro.py
   - `workers` (اختياري)
   - `chunk_size` (اختياري)
   - `force` (اختياري)
+  - `prefer_english_source` (اختياري): يفضّل الترجمة الإنجليزية أولًا، وإن لم تتوفر يستخدم أي ترجمة متاحة
 
 بعد اكتمال التشغيل ستجد النتائج في **Artifacts** باسم:
 - `translated-subtitles`
@@ -118,7 +119,8 @@ python V100_YouTube_subtitles_translator_pro.py "<video_or_playlist_url_or_video
   --target ar \
   --workers 6 \
   --chunk-size 40 \
-  --output-dir output
+  --output-dir output \
+  --prefer-english-source
 ```
 
 #### الخيارات | Options
@@ -127,6 +129,7 @@ python V100_YouTube_subtitles_translator_pro.py "<video_or_playlist_url_or_video
 - `--chunk-size`: حجم دفعة المقاطع المترجمة
 - `--output-dir`: مجلد المخرجات الأساسي
 - `--force`: إعادة المعالجة حتى إذا كانت الترجمة موجودة
+- `--prefer-english-source`: تفضيل تحميل الترجمة الإنجليزية أولًا، ثم الرجوع لأي لغة متاحة عند عدم توفر الإنجليزية
 
 ---
 
