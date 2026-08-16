@@ -14,6 +14,7 @@ YouTube Transcript -> Translated SRT Converter (v3)
         [--target ar] [--workers 6] [--chunk-size 60] [--output-dir output] [--force]
 """
 import argparse
+from contextlib import contextmanager
 import inspect
 import os
 import random
@@ -97,6 +98,7 @@ PLAYLIST_VIDEO_DELAY = 2.0
 
 _print_lock = threading.Lock()
 _scraperapi_proxy_log_once = False
+_PROXY_ENV_KEYS = ("HTTP_PROXY", "HTTPS_PROXY", "ALL_PROXY", "http_proxy", "https_proxy", "all_proxy")
 
 
 def log(message: str) -> None:
@@ -112,10 +114,10 @@ def _build_scraperapi_proxy_url() -> Optional[str]:
     return f"http://scraperapi:{key}@proxy-server.scraperapi.com:8001"
 
 
-def _build_youtube_transcript_api_client():
+def _build_youtube_transcript_api_client(use_proxy: bool = True):
     global _scraperapi_proxy_log_once
 
-    proxy_url = _build_scraperapi_proxy_url()
+    proxy_url = _build_scraperapi_proxy_url() if use_proxy else None
     if not proxy_url:
         return YouTubeTranscriptApi()
 
@@ -132,9 +134,31 @@ def _build_youtube_transcript_api_client():
     except Exception as exc:
         log(f"  [WARN] Could not initialize youtube-transcript-api proxy config: {exc}")
 
-    os.environ.setdefault("HTTP_PROXY", proxy_url)
-    os.environ.setdefault("HTTPS_PROXY", proxy_url)
     return YouTubeTranscriptApi()
+
+
+@contextmanager
+def _temporary_proxy_env(proxy_url: Optional[str]):
+    original_env = {key: os.environ.get(key) for key in _PROXY_ENV_KEYS}
+    try:
+        if proxy_url:
+            for key in _PROXY_ENV_KEYS:
+                os.environ[key] = proxy_url
+        else:
+            for key in _PROXY_ENV_KEYS:
+                os.environ.pop(key, None)
+        yield
+    finally:
+        for key, value in original_env.items():
+            if value is None:
+                os.environ.pop(key, None)
+            else:
+                os.environ[key] = value
+
+
+def _is_ssl_cert_verification_error(exc: Exception) -> bool:
+    message = str(exc).lower()
+    return "certificate verify failed" in message or "sslcertverificationerror" in message
 
 
 # ---------------------------------------------------------------------------
@@ -381,15 +405,17 @@ def parse_srt_file(path: Path) -> List[Dict]:
 # ---------------------------------------------------------------------------
 # جلب الترجمة (Transcript) من يوتيوب
 # ---------------------------------------------------------------------------
-def get_transcript_list(video_id: str):
+def get_transcript_list(video_id: str, use_proxy: bool = True):
     """يدعم إصدارات youtube-transcript-api الحديثة والقديمة معًا."""
-    ytt_api = _build_youtube_transcript_api_client()
+    proxy_url = _build_scraperapi_proxy_url() if use_proxy else None
+    with _temporary_proxy_env(proxy_url):
+        ytt_api = _build_youtube_transcript_api_client(use_proxy=use_proxy)
 
-    if hasattr(ytt_api, "list"):
-        return ytt_api.list(video_id)
+        if hasattr(ytt_api, "list"):
+            return ytt_api.list(video_id)
 
-    if hasattr(YouTubeTranscriptApi, "list_transcripts"):
-        return YouTubeTranscriptApi.list_transcripts(video_id)
+        if hasattr(YouTubeTranscriptApi, "list_transcripts"):
+            return YouTubeTranscriptApi.list_transcripts(video_id)
 
     raise RuntimeError("Unsupported youtube-transcript-api version installed.")
 
@@ -407,11 +433,18 @@ def fetch_transcript(video_id: str, prefer_english_source: bool = False) -> Tupl
     log(f"• Fetching transcript for: {video_id}")
 
     try:
-        transcript_list = get_transcript_list(video_id)
+        transcript_list = get_transcript_list(video_id, use_proxy=True)
     except TranscriptsDisabled:
         raise RuntimeError("Transcripts are disabled for this video.")
     except Exception as exc:
-        raise RuntimeError(f"Could not load transcript list: {exc}")
+        if _build_scraperapi_proxy_url() and _is_ssl_cert_verification_error(exc):
+            log("  [WARN] Proxy SSL verification failed. Retrying transcript list without proxy.")
+            try:
+                transcript_list = get_transcript_list(video_id, use_proxy=False)
+            except Exception as retry_exc:
+                raise RuntimeError(f"Could not load transcript list: {retry_exc}")
+        else:
+            raise RuntimeError(f"Could not load transcript list: {exc}")
 
     if prefer_english_source:
         # المحاولة الأولى: تفضيل الترجمة الإنجليزية إن وُجدت
