@@ -55,6 +55,8 @@ jobs:
           pip install youtube-transcript-api deep-translator yt-dlp requests
 
       - name: Run translator
+        env:
+          SCRAPERAPI_KEY: ${{ secrets.SCRAPERAPI_KEY }}
         run: |
           FORCE_FLAG=""
           if [ "${{ inputs.force }}" = "true" ]; then
