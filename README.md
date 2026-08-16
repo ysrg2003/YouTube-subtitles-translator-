@@ -84,6 +84,27 @@ pip install youtube-transcript-api deep-translator yt-dlp requests
 python V100_YouTube_subtitles_translator_pro.py
 ```
 
+## GitHub Actions (تشغيل عبر GitHub)
+
+تمت إضافة Workflow جاهز في:
+
+```text
+.github/workflows/run-translator.yml
+```
+
+لتشغيله:
+- افتح تبويب **Actions** في GitHub.
+- اختر **Run YouTube Subtitles Translator**.
+- اضغط **Run workflow** وأدخل:
+  - `source`: رابط فيديو/Playlist أو Video ID
+  - `target` (اختياري، افتراضي `ar`)
+  - `workers` (اختياري)
+  - `chunk_size` (اختياري)
+  - `force` (اختياري)
+
+بعد اكتمال التشغيل ستجد النتائج في **Artifacts** باسم:
+- `translated-subtitles`
+
 ### 1) الوضع التفاعلي | Interactive mode
 
 شغّل السكربت بدون معاملات ثم اختر:

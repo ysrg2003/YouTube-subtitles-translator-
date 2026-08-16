@@ -1,0 +1,73 @@
+name: Run YouTube Subtitles Translator
+
+on:
+  workflow_dispatch:
+    inputs:
+      source:
+        description: "YouTube video URL, playlist URL, or 11-char video ID"
+        required: true
+        type: string
+      target:
+        description: "Target language code (example: ar, en, fr)"
+        required: false
+        default: "ar"
+        type: string
+      workers:
+        description: "Parallel translation workers"
+        required: false
+        default: "6"
+        type: string
+      chunk_size:
+        description: "Initial translation chunk size"
+        required: false
+        default: "40"
+        type: string
+      force:
+        description: "Re-process even if output exists"
+        required: false
+        default: false
+        type: boolean
+
+jobs:
+  translate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install youtube-transcript-api deep-translator yt-dlp requests
+
+      - name: Run translator
+        run: |
+          FORCE_FLAG=""
+          if [ "${{ inputs.force }}" = "true" ]; then
+            FORCE_FLAG="--force"
+          fi
+
+          python V100_YouTube_subtitles_translator_pro.py \
+            "${{ inputs.source }}" \
+            --target "${{ inputs.target }}" \
+            --workers "${{ inputs.workers }}" \
+            --chunk-size "${{ inputs.chunk_size }}" \
+            --output-dir output \
+            $FORCE_FLAG
+
+      - name: Upload output artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: translated-subtitles
+          path: output/
+          if-no-files-found: warn
