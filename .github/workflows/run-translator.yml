@@ -66,6 +66,7 @@ jobs:
             ENGLISH_SOURCE_FLAG="--prefer-english-source"
           fi
 
+          set +e
           python V100_YouTube_subtitles_translator_pro.py \
             "${{ inputs.source }}" \
             --target "${{ inputs.target }}" \
@@ -73,12 +74,24 @@ jobs:
             --chunk-size "${{ inputs.chunk_size }}" \
             --output-dir output \
             $FORCE_FLAG \
-            $ENGLISH_SOURCE_FLAG
+            $ENGLISH_SOURCE_FLAG | tee translate.log
+          STATUS=${PIPESTATUS[0]}
+          set -e
+
+          if [ "$STATUS" -ne 0 ]; then
+            if grep -q "YouTube is blocking requests from your IP" translate.log; then
+              echo "::warning::YouTube blocked transcript requests from this runner IP. Marking run as successful because this is an external transient failure."
+            else
+              exit "$STATUS"
+            fi
+          fi
 
       - name: Upload output artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: translated-subtitles
-          path: output/
+          path: |
+            output/
+            translate.log
           if-no-files-found: warn
