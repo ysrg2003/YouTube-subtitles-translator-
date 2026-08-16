@@ -917,7 +917,8 @@ def translate_srt_file(source_path: Path, target_path: Path, config: RunConfig) 
 
 
 def process_video(video_id: str, base_dir: Path, config: RunConfig) -> bool:
-    target_filename = target_filename_for(config.target_lang)
+    effective_target_lang = "en" if config.prefer_english_source else config.target_lang
+    target_filename = target_filename_for(effective_target_lang)
 
     if not config.force:
         existing_dir = find_existing_output_dir(base_dir, video_id)
@@ -948,7 +949,13 @@ def process_video(video_id: str, base_dir: Path, config: RunConfig) -> bool:
     write_text_file(original_path, build_srt(segments))
 
     target_path = out_dir / target_filename
-    ok = translate_srt_file(original_path, target_path, config)
+    if config.prefer_english_source and lang.lower().startswith("en"):
+        log("• English transcript is already available. Skipping translation step.")
+        log(f"• Done: {title}")
+        return True
+
+    translation_config = replace(config, target_lang=effective_target_lang)
+    ok = translate_srt_file(original_path, target_path, translation_config)
     if ok:
         log(f"• Done: {title}")
     return ok
@@ -991,7 +998,7 @@ def parse_args(argv: Optional[List[str]] = None) -> argparse.Namespace:
     parser.add_argument(
         "--prefer-english-source",
         action="store_true",
-        help="Prefer English source transcript when available, otherwise fall back to any available language",
+        help="English-only mode for YouTube: use English transcript directly when available, otherwise translate available transcript to English",
     )
     return parser.parse_args(argv)
 

@@ -28,7 +28,7 @@ on:
         default: false
         type: boolean
       prefer_english_source:
-        description: "Prefer English source transcript, fallback to available language if missing"
+        description: "English-only output: use English transcript directly, else translate available transcript to English"
         required: false
         default: false
         type: boolean
