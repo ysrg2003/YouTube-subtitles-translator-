@@ -84,6 +84,28 @@ pip install youtube-transcript-api deep-translator yt-dlp requests
 python V100_YouTube_subtitles_translator_pro.py
 ```
 
+## GitHub Actions (تشغيل عبر GitHub)
+
+تمت إضافة Workflow جاهز في:
+
+```text
+.github/workflows/run-translator.yml
+```
+
+لتشغيله:
+- افتح تبويب **Actions** في GitHub.
+- اختر **Run YouTube Subtitles Translator**.
+- اضغط **Run workflow** وأدخل:
+  - `source`: رابط فيديو/Playlist أو Video ID
+  - `target` (اختياري، افتراضي `ar`)
+  - `workers` (اختياري)
+  - `chunk_size` (اختياري)
+  - `force` (اختياري)
+  - `prefer_english_source` (اختياري): وضع إنجليزي فقط؛ إذا وُجدت ترجمة إنجليزية يحفظها مباشرة، وإن لم توجد يترجم أي ترجمة متاحة إلى الإنجليزية
+
+بعد اكتمال التشغيل ستجد النتائج في **Artifacts** باسم:
+- `translated-subtitles`
+
 ### 1) الوضع التفاعلي | Interactive mode
 
 شغّل السكربت بدون معاملات ثم اختر:
@@ -97,7 +119,8 @@ python V100_YouTube_subtitles_translator_pro.py "<video_or_playlist_url_or_video
   --target ar \
   --workers 6 \
   --chunk-size 40 \
-  --output-dir output
+  --output-dir output \
+  --prefer-english-source
 ```
 
 #### الخيارات | Options
@@ -106,6 +129,8 @@ python V100_YouTube_subtitles_translator_pro.py "<video_or_playlist_url_or_video
 - `--chunk-size`: حجم دفعة المقاطع المترجمة
 - `--output-dir`: مجلد المخرجات الأساسي
 - `--force`: إعادة المعالجة حتى إذا كانت الترجمة موجودة
+- `--prefer-english-source`: وضع إنجليزي فقط (لفيديوهات YouTube): يحفظ الإنجليزية مباشرة إن كانت متاحة، وإلا يترجم الترجمة المتاحة إلى الإنجليزية
+  - عند تفعيل هذا الخيار، يكون ملف الخرج النهائي إنجليزيًا (`en.srt`) حتى لو كانت `--target` مختلفة.
 
 ---
 

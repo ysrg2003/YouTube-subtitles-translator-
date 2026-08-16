@@ -159,6 +159,7 @@ class RunConfig:
     """إعدادات التشغيل الحالية (تحل محل متغيرات عامة قابلة للتعديل)."""
     target_lang: str = "ar"
     force: bool = False
+    prefer_english_source: bool = False
     throttle: AdaptiveThrottle = field(
         default_factory=lambda: AdaptiveThrottle(TRANSLATION_CHUNK_SIZE, TRANSLATION_WORKERS)
     )
@@ -353,7 +354,7 @@ def get_transcript_list(video_id: str):
     raise RuntimeError("Unsupported youtube-transcript-api version installed.")
 
 
-def fetch_transcript(video_id: str) -> Tuple[List[Dict], str]:
+def fetch_transcript(video_id: str, prefer_english_source: bool = False) -> Tuple[List[Dict], str]:
     """
     يجلب أفضل ترجمة متاحة لفيديو معيّن.
 
@@ -372,16 +373,17 @@ def fetch_transcript(video_id: str) -> Tuple[List[Dict], str]:
     except Exception as exc:
         raise RuntimeError(f"Could not load transcript list: {exc}")
 
-    # المحاولة الأولى: تفضيل الترجمة الإنجليزية إن وُجدت
-    try:
-        transcript = transcript_list.find_transcript(["en"])
-        raw = transcript.fetch()
-        log("• English transcript found.")
-        return normalize_segments(raw), "en"
-    except NoTranscriptFound:
-        pass
-    except Exception as exc:
-        log(f"  [WARN] English transcript exists but failed to fetch: {exc}")
+    if prefer_english_source:
+        # المحاولة الأولى: تفضيل الترجمة الإنجليزية إن وُجدت
+        try:
+            transcript = transcript_list.find_transcript(["en"])
+            raw = transcript.fetch()
+            log("• English transcript found.")
+            return normalize_segments(raw), "en"
+        except NoTranscriptFound:
+            log("  [INFO] English transcript not found. Falling back to available transcripts.")
+        except Exception as exc:
+            log(f"  [WARN] English transcript exists but failed to fetch: {exc}")
 
     # المحاولة الثانية: جرّب كل لغة متاحة، ولا تتوقف عند أول فشل
     last_error: Optional[Exception] = None
@@ -915,7 +917,8 @@ def translate_srt_file(source_path: Path, target_path: Path, config: RunConfig) 
 
 
 def process_video(video_id: str, base_dir: Path, config: RunConfig) -> bool:
-    target_filename = target_filename_for(config.target_lang)
+    effective_target_lang = "en" if config.prefer_english_source else config.target_lang
+    target_filename = target_filename_for(effective_target_lang)
 
     if not config.force:
         existing_dir = find_existing_output_dir(base_dir, video_id)
@@ -924,7 +927,7 @@ def process_video(video_id: str, base_dir: Path, config: RunConfig) -> bool:
             return True
 
     try:
-        segments, lang = fetch_transcript(video_id)
+        segments, lang = fetch_transcript(video_id, prefer_english_source=config.prefer_english_source)
         log(f"• Source transcript language: {lang}")
     except Exception as exc:
         log(f"[SKIP] {video_id}: {exc}")
@@ -946,7 +949,13 @@ def process_video(video_id: str, base_dir: Path, config: RunConfig) -> bool:
     write_text_file(original_path, build_srt(segments))
 
     target_path = out_dir / target_filename
-    ok = translate_srt_file(original_path, target_path, config)
+    if config.prefer_english_source and lang.lower().startswith("en"):
+        log("• English transcript is already available. Skipping translation step.")
+        log(f"• Done: {title}")
+        return True
+
+    translation_config = replace(config, target_lang=effective_target_lang)
+    ok = translate_srt_file(original_path, target_path, translation_config)
     if ok:
         log(f"• Done: {title}")
     return ok
@@ -986,6 +995,11 @@ def parse_args(argv: Optional[List[str]] = None) -> argparse.Namespace:
     parser.add_argument(
         "--force", action="store_true", help="Re-process videos even if output already exists"
     )
+    parser.add_argument(
+        "--prefer-english-source",
+        action="store_true",
+        help="English-only mode for YouTube: use English transcript directly when available, otherwise translate available transcript to English",
+    )
     return parser.parse_args(argv)
 
 
@@ -1001,6 +1015,7 @@ def build_run_config(args: argparse.Namespace) -> RunConfig:
     return RunConfig(
         target_lang=target_lang,
         force=args.force,
+        prefer_english_source=args.prefer_english_source,
         throttle=AdaptiveThrottle(chunk_size, workers),
     )
 
